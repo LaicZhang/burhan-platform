@@ -32,15 +32,16 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
     }
 
-    const url = useRuntimeConfig().public.supabase?.url as string
-    const serviceKey = useRuntimeConfig().supabase?.serviceKey as string
+    const runtimeConfig = useRuntimeConfig()
+    const url = runtimeConfig.public.supabase?.url as string
+    const secretKey = (runtimeConfig.supabase?.secretKey ?? runtimeConfig.supabase?.serviceKey) as string | undefined
 
     const { users } = await $fetch<{ users: { id: string; email: string }[] }>(
       `${url}/auth/v1/admin/users`,
       {
         headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
+          apikey: secretKey!,
+          Authorization: `Bearer ${secretKey}`,
         },
       }
     )

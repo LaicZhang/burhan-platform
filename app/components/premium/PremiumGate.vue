@@ -5,7 +5,7 @@ interface Props {
   entityTitle?: string | null
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   price: null,
   entityTitle: null,
 })

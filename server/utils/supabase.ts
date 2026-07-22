@@ -21,16 +21,17 @@ export function getSupabaseAdmin() {
   const config = useRuntimeConfig()
 
   const url = config.public.supabase?.url as string
-  const serviceKey = config.supabase?.serviceKey as string
+  // v2 module exposes secretKey (serviceKey is deprecated)
+  const secretKey = (config.supabase?.secretKey ?? config.supabase?.serviceKey) as string | undefined
 
-  if (!url || !serviceKey) {
+  if (!url || !secretKey) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Supabase admin credentials are not configured. Set SUPABASE_SERVICE_KEY in .env',
+      statusMessage: 'Supabase admin credentials are not configured. Set SUPABASE_SECRET_KEY in .env',
     })
   }
 
-  return createClient<Database>(url, serviceKey, {
+  return createClient<Database>(url, secretKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

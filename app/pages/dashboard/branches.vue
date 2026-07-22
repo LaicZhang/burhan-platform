@@ -11,7 +11,15 @@ const supabase = useSupabaseClient<Database>()
 const { t, locale } = useI18n()
 const { profile } = useUser()
 
-type Branch = Database['public']['Tables']['branches']['Row']
+interface Branch {
+  id: string
+  organization_id: string
+  name: unknown
+  module_type: Database['public']['Tables']['branches']['Row']['module_type']
+  slug: string
+  is_active: boolean
+  created_at: string
+}
 
 const branches = ref<Branch[]>([])
 const entityCounts = ref<Record<string, number>>({})
@@ -83,7 +91,7 @@ async function fetchBranches() {
     .order('created_at', { ascending: false })
 
   if (data) {
-    branches.value = data
+    branches.value = data as unknown as Branch[]
     await fetchEntityCounts()
   }
   loading.value = false
@@ -187,11 +195,13 @@ async function submitBranch() {
 async function toggleStatus(branch: Branch) {
   togglingId.value = branch.id
   const newStatus = !branch.is_active
-
-  const original = branches.value.map(b => ({ ...b }))
+  const previousStatus = branch.is_active
   const idx = branches.value.findIndex(b => b.id === branch.id)
   if (idx !== -1) {
-    branches.value[idx] = { ...branches.value[idx], is_active: newStatus }
+    const current = branches.value[idx]
+    if (current) {
+      branches.value[idx] = Object.assign({}, current, { is_active: newStatus })
+    }
   }
 
   const { error: toggleError } = await supabase
@@ -199,8 +209,11 @@ async function toggleStatus(branch: Branch) {
     .update({ is_active: newStatus })
     .eq('id', branch.id)
 
-  if (toggleError) {
-    branches.value = original
+  if (toggleError && idx !== -1) {
+    const current = branches.value[idx]
+    if (current) {
+      branches.value[idx] = Object.assign({}, current, { is_active: previousStatus })
+    }
   }
 
   togglingId.value = null

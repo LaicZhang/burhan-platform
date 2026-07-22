@@ -36,14 +36,22 @@ interface Series {
   id: string
   organization_id: string
   branch_id: string
-  title: Json
-  description?: Json
-  cover_url?: string
+  title: unknown
+  description?: unknown
+  cover_url?: string | null
   is_active: boolean
   created_at: string
 }
 
-type Entity = Database['public']['Tables']['entities']['Row']
+interface Entity {
+  id: string
+  content_type: string | null
+  video_id: string | null
+  content: unknown
+  title: unknown
+  created_at: string
+  is_premium?: boolean
+}
 
 const seriesList = ref<Series[]>([])
 const seriesLoading = ref(false)
@@ -91,21 +99,21 @@ watch(
   { immediate: true },
 )
 
-function seriesTitle(s: Series): string {
-  const t = s.title as Record<string, string>
+function seriesTitle(s: { title: unknown }): string {
+  const t = s.title as unknown as Record<string, string>
   return t[locale.value] || t.zh || t.en || ''
 }
 
-function seriesBranchName(s: Series): string {
+function seriesBranchName(s: { branch_id: string }): string {
   const b = branches.value.find(b => b.id === s.branch_id)
   if (!b) return ''
-  const name = b.name as Record<string, string>
+  const name = b.name as unknown as Record<string, string>
   return name[locale.value] || name.zh || name.en || ''
 }
 
-function seriesDescription(s: Series): string {
+function seriesDescription(s: { description?: unknown }): string {
   if (!s.description) return ''
-  const d = s.description as Record<string, string>
+  const d = (s.description ?? {}) as unknown as Record<string, string>
   return d[locale.value] || d.zh || d.en || ''
 }
 
@@ -116,7 +124,7 @@ function contentTypeIcon(entity: Entity): string {
   return '📄'
 }
 
-function contentTypeBadgeVariant(entity: Entity): string {
+function contentTypeBadgeVariant(entity: Entity): 'default' | 'premium' | 'success' | 'warning' | 'info' {
   if (entity.content_type === 'video') return 'info'
   if (entity.content_type === 'audio') return 'warning'
   return 'default'
@@ -633,7 +641,7 @@ const speedDialItems = computed(() => [
                 </div>
                 <div class="space-y-3">
                   <h3 class="text-2xl font-bold text-white">{{ displayOrgName }}</h3>
-                  <p v-if="displayOrgNameEn !== displayOrgName.value" class="text-sm text-gray-500">
+                  <p v-if="displayOrgNameEn !== displayOrgName" class="text-sm text-gray-500">
                     {{ displayOrgNameEn }}
                   </p>
                   <p v-if="getTagline()" class="text-gray-400 leading-relaxed">

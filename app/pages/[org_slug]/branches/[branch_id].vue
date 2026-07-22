@@ -14,12 +14,12 @@ const { locale } = useI18n()
 const currentLocale = computed(() => locale.value as 'zh' | 'en')
 const localizedBranchName = computed(() => {
   if (!branch.value) return ''
-  const name = branch.value.name as Record<string, string>
+  const name = branch.value.name as unknown as Record<string, string>
   return name[currentLocale.value] || name.en || ''
 })
 const localizedOrgName = computed(() => {
   if (!org.value?.name) return ''
-  const name = org.value.name as Record<string, string>
+  const name = org.value.name as unknown as Record<string, string>
   return name[currentLocale.value] || name.zh || ''
 })
 
@@ -40,7 +40,7 @@ const featuredEntity = computed(() => {
 
 const listEntities = computed(() => {
   if (!featuredEntity.value) return entities.value
-  return entities.value.filter((e) => e.id !== featuredEntity.value.id)
+  return entities.value.filter((e) => e.id !== featuredEntity.value!.id)
 })
 </script>
 

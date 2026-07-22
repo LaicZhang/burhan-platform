@@ -41,7 +41,7 @@ export default defineNuxtRouteMiddleware(async (to, _from) => {
 
         if (fallbackOrg) {
           useState('org').value = fallbackOrg
-          const fallbackName = fallbackOrg.name as Record<string, string>
+          const fallbackName = fallbackOrg.name as unknown as Record<string, string>
           useHead({
             title: fallbackName[currentLocale] || fallbackName.zh || fallbackName.en || '',
           })

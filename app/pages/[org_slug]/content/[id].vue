@@ -77,13 +77,13 @@ function localizedContent(obj: Json): string {
 
 function seriesTitle(): string {
   if (!series.value) return ''
-  const t = series.value.title as Record<string, string>
+  const t = series.value.title as unknown as Record<string, string>
   return t[locale.value] || t.zh || t.en || ''
 }
 
 function orgDisplayName(): string {
   if (!org.value?.name) return ''
-  const name = org.value.name as Record<string, string>
+  const name = org.value.name as unknown as Record<string, string>
   return name[locale.value] || name.zh || name.en || ''
 }
 
@@ -103,7 +103,7 @@ function formattedDate(): string {
   )
 }
 
-function contentTypeBadgeVariant(): string {
+function contentTypeBadgeVariant(): 'default' | 'premium' | 'success' | 'warning' | 'info' {
   if (!entity.value) return 'default'
   if (entity.value.content_type === 'video') return 'info'
   if (entity.value.content_type === 'audio') return 'warning'

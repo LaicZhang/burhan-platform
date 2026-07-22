@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
     const { data: org, error: orgError } = await admin
       .from('organizations')
       .insert({
-        name: { zh: orgName, en: orgName },
+        name: JSON.stringify({ zh: orgName, en: orgName }),
         org_slug: slug,
         settings: {},
       })

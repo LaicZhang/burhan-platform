@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database } from '~/types/database'
+import type { Database, Json } from '~/types/database'
 import { compressImage } from '~/utils/compressImage'
 
 definePageMeta({

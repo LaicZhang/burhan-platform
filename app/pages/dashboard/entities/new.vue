@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database } from '~/types/database'
+import type { Database, Json } from '~/types/database'
 import { compressImage } from '~/utils/compressImage'
 
 definePageMeta({
@@ -53,7 +53,8 @@ async function fetchBranches() {
   if (data) {
     branches.value = data
     if (!form.branch_id && data.length > 0) {
-      form.branch_id = data[0].id
+      const first = data[0]
+      if (first) form.branch_id = first.id
     }
   }
 }

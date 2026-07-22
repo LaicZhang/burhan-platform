@@ -31,6 +31,7 @@ export interface Database {
           settings?: Json
           created_at?: string
         }
+        Relationships: []
       }
       branches: {
         Row: {
@@ -60,6 +61,7 @@ export interface Database {
           is_active?: boolean
           created_at?: string
         }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -83,6 +85,7 @@ export interface Database {
           role?: UserRole
           created_at?: string
         }
+        Relationships: []
       }
       entities: {
         Row: {
@@ -145,6 +148,7 @@ export interface Database {
           sort_order?: number
           created_at?: string
         }
+        Relationships: []
       }
       observatory_threats: {
         Row: {
@@ -183,6 +187,41 @@ export interface Database {
           response_url?: string | null
           created_at?: string
         }
+        Relationships: []
+      }
+
+      series: {
+        Row: {
+          id: string
+          organization_id: string
+          branch_id: string
+          title: Json
+          description: Json | null
+          cover_url: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          branch_id: string
+          title?: Json
+          description?: Json | null
+          cover_url?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          branch_id?: string
+          title?: Json
+          description?: Json | null
+          cover_url?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
       }
       observatory_analysts: {
         Row: {
@@ -200,13 +239,21 @@ export interface Database {
           role_type?: AnalystRole
           created_at?: string
         }
+        Relationships: []
       }
     }
-    Views: Record<string, never>
-    Functions: Record<string, never>
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
     Enums: {
       module_type: ModuleType
       user_role: UserRole
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }

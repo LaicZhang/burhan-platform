@@ -9,6 +9,7 @@ definePageMeta({
 })
 
 const supabase = useSupabaseClient<Database>()
+type EntityUpdate = Database['public']['Tables']['entities']['Update']
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const { profile } = useUser()
@@ -250,7 +251,7 @@ async function saveEditEpisode() {
   episodeEditSaving.value = true
   error.value = ''
 
-  const payload: Record<string, any> = {
+  const payload: EntityUpdate = {
     title: { zh: episodeEditForm.title_zh, en: episodeEditForm.title_en } as Json,
     content_type: episodeEditForm.content_type,
     is_premium: episodeEditForm.is_premium,
@@ -363,6 +364,7 @@ async function deleteEntity(entityId: string) {
 async function moveUp(entity: LinkedEntity, index: number) {
   if (index === 0) return
   const above = episodes.value[index - 1]
+  if (!above) return
   const tempOrder = entity.sort_order
   await supabase.from('entities').update({ sort_order: above.sort_order }).eq('id', entity.id)
   await supabase.from('entities').update({ sort_order: tempOrder }).eq('id', above.id)
@@ -373,6 +375,7 @@ async function moveUp(entity: LinkedEntity, index: number) {
 async function moveDown(entity: LinkedEntity, index: number) {
   if (index >= episodes.value.length - 1) return
   const below = episodes.value[index + 1]
+  if (!below) return
   const tempOrder = entity.sort_order
   await supabase.from('entities').update({ sort_order: below.sort_order }).eq('id', entity.id)
   await supabase.from('entities').update({ sort_order: tempOrder }).eq('id', below.id)
@@ -510,7 +513,7 @@ function episodeContentSummary(entity: LinkedEntity): string {
                     { value: 'audio', label: '🎙️ 音频 / 播客' },
                   ]"
                   placeholder=" "
-                  @update:model-value="episodeForm.content_type = $event"
+                  @update:model-value="episodeForm.content_type = ($event as 'article' | 'video' | 'audio')"
                 />
                 <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
                   <input v-model="episodeForm.is_premium" type="checkbox" class="accent-gold" />
@@ -576,7 +579,7 @@ function episodeContentSummary(entity: LinkedEntity): string {
                     { value: 'audio', label: '🎙️ 音频 / 播客' },
                   ]"
                   placeholder=" "
-                  @update:model-value="episodeEditForm.content_type = $event"
+                  @update:model-value="episodeEditForm.content_type = ($event as 'article' | 'video' | 'audio')"
                 />
                 <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
                   <input v-model="episodeEditForm.is_premium" type="checkbox" class="accent-gold" />

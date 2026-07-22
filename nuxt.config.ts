@@ -23,6 +23,7 @@ export default defineNuxtConfig({
   },
 
   modules: [
+    '@nuxt/eslint',
     '@nuxtjs/tailwindcss',
     '@nuxtjs/supabase',
     '@nuxtjs/i18n',
@@ -71,27 +72,23 @@ export default defineNuxtConfig({
   },
 
   supabase: {
-    serviceKey: process.env.SUPABASE_SECRET_KEY,
+    // v2: secretKey replaces deprecated serviceKey; maps project env at build time
+    secretKey: process.env.SUPABASE_SECRET_KEY,
     redirect: false,
-    clientOptions: {
-      auth: {
-        flowType: 'pkce',
-        detectSessionInUrl: true,
-        persistSession: true,
-      },
-    },
+    types: '~/types/database.ts',
+    // useSsrCookies defaults to true — drop clientOptions.auth that conflict with SSR cookies
   },
 
   i18n: {
-    restructureDir: false,
+    // v10: restructureDir cannot be false; use app/ so existing i18n.config.ts resolves
+    restructureDir: 'app',
     locales: [
       { code: 'zh', iso: 'zh-CN', dir: 'ltr' },
       { code: 'en', iso: 'en-US', dir: 'ltr' },
     ],
     defaultLocale: 'zh',
     strategy: 'prefix_except_default',
-    vueI18n: './app/i18n.config.ts',
-    bundle: { optimizeTranslationDirective: false },
+    vueI18n: 'i18n.config.ts',
   },
 
   vite: {

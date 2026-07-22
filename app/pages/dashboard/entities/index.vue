@@ -8,6 +8,8 @@ definePageMeta({
 })
 
 const supabase = useSupabaseClient<Database>()
+type EntityUpdate = Database['public']['Tables']['entities']['Update']
+type EntityInsert = Database['public']['Tables']['entities']['Insert']
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const { profile } = useUser()
@@ -232,7 +234,7 @@ async function submitEntity() {
     return
   }
   submitting.value = true
-  const payload: Record<string, any> = {
+  const payload = {
     organization_id: id,
     branch_id: form.branch_id,
     title: { zh: form.title_zh, en: form.title_en } as Json,
@@ -255,7 +257,7 @@ async function submitEntity() {
     }
     const { error: updateError } = await supabase
       .from('entities')
-      .update(payload)
+      .update(payload as EntityUpdate)
       .eq('id', editId)
     submitting.value = false
     if (updateError) {
@@ -267,7 +269,7 @@ async function submitEntity() {
   } else {
     const { error: insertError } = await supabase
       .from('entities')
-      .insert(payload)
+      .insert(payload as EntityInsert)
     submitting.value = false
     if (insertError) {
       error.value = t('dashboard.entity_create_error')

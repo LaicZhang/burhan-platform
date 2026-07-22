@@ -4,7 +4,7 @@ definePageMeta({
 })
 
 const { t, locale } = useI18n()
-const head = useLocaleHead({ addSeoAttributes: true })
+const head = useLocaleHead()
 
 useHead({
   title: t('legal.about.meta_title'),

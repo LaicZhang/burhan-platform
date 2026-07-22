@@ -5,7 +5,7 @@ const editorRef = inject<{ value: Editor | null }>('editor')
 const selectionKey = inject<Ref<number>>('selectionKey', ref(0))
 
 const editor = computed(() => {
-  selectionKey.value
+  void selectionKey.value
   return editorRef?.value ?? null
 })
 
@@ -13,7 +13,7 @@ const linkModalOpen = ref(false)
 const linkUrl = ref('')
 
 function isActive(name: string, attrs?: Record<string, any>): boolean {
-  selectionKey.value
+  void selectionKey.value
   return editor.value?.isActive(name, attrs) ?? false
 }
 
