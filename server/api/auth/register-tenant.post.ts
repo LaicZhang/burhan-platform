@@ -1,0 +1,87 @@
+import { getSupabaseAdmin } from '../../utils/supabase'
+
+export default defineEventHandler(async (event) => {
+  try {
+    const admin = getSupabaseAdmin()
+    const { accessToken, orgName, orgSlug } = await readBody(event)
+
+    if (!accessToken || !orgName || !orgSlug) {
+      throw createError({ statusCode: 400, statusMessage: 'Missing required fields' })
+    }
+
+    const { data: { user }, error: userError } = await admin.auth.getUser(accessToken)
+
+    if (userError || !user) {
+      throw createError({ statusCode: 401, statusMessage: 'Invalid session' })
+    }
+
+    const slug = (orgSlug as string).toLowerCase().replace(/[^a-z0-9-]/g, '')
+
+    if (!slug || slug.length < 2) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid organization slug' })
+    }
+
+    const { data: existingOrg } = await admin
+      .from('organizations')
+      .select('id')
+      .eq('org_slug', slug)
+      .maybeSingle()
+
+    if (existingOrg) {
+      throw createError({ statusCode: 409, statusMessage: 'Slug already taken' })
+    }
+
+    const { data: org, error: orgError } = await admin
+      .from('organizations')
+      .insert({
+        name: { zh: orgName, en: orgName },
+        org_slug: slug,
+        settings: {},
+      })
+      .select('id, org_slug')
+      .single()
+
+    if (orgError || !org?.id) {
+      console.error('[register-tenant] orgError:', orgError)
+      throw createError({ statusCode: 500, statusMessage: `Failed to create organization: ${orgError?.message || 'unknown'}` })
+    }
+
+    const { data: branch, error: branchError } = await admin
+      .from('branches')
+      .insert({
+        organization_id: org.id,
+        name: { zh: '主分支', en: 'Main Branch' },
+        slug: 'main',
+        module_type: 'content',
+      })
+      .select('id, organization_id')
+      .single()
+
+    if (branchError || !branch?.id) {
+      console.error('[register-tenant] branchError:', branchError)
+      console.error('[register-tenant] branch data:', branch)
+      throw createError({ statusCode: 500, statusMessage: `Failed to create default branch: ${branchError?.message || 'branch data missing'}` })
+    }
+
+    const { error: profileError } = await admin
+      .from('profiles')
+      .update({
+        organization_id: org.id,
+        role: 'owner',
+      })
+      .eq('id', user.id)
+
+    if (profileError) {
+      console.error('[register-tenant] profileError:', profileError)
+      throw createError({ statusCode: 500, statusMessage: `Failed to update profile: ${profileError.message}` })
+    }
+
+    return { org, branch }
+  } catch (err: any) {
+    console.error('[register-tenant] Unhandled error:', err)
+    throw createError({
+      statusCode: err.statusCode || 500,
+      statusMessage: err.statusMessage || err.message || 'Internal server error',
+    })
+  }
+})
