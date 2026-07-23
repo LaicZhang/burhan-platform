@@ -1,4 +1,19 @@
 <script setup lang="ts">
+import { localizedValue } from '~/utils/localized'
+
+interface AdminOrg {
+  id: string
+  name: string
+  org_slug: string
+  created_at: string
+  branch_count: number
+  _name?: string
+}
+
+interface AdminStatsResponse {
+  stats: { totalOrgs: number; totalBranches: number; totalUsers: number }
+  organizations: AdminOrg[]
+}
 definePageMeta({
   layout: 'dashboard',
   middleware: 'super-admin-only',
@@ -8,17 +23,17 @@ definePageMeta({
 const { t, locale } = useI18n()
 
 const stats = ref({ totalOrgs: 0, totalBranches: 0, totalUsers: 0 })
-const organizations = ref<any[]>([])
+const organizations = ref<(AdminOrg & { _name: string })[]>([])
 const loading = ref(true)
 
 async function loadStats() {
   loading.value = true
   try {
-    const data = await $fetch<{ stats: typeof stats.value; organizations: any[] }>('/api/admin/stats')
+    const data = await $fetch<AdminStatsResponse>('/api/admin/stats')
     stats.value = data.stats
     organizations.value = data.organizations.map(org => ({
       ...org,
-      _name: localizedValue(org.name as any, locale.value) || org.name?.en || org.name?.zh || '—',
+      _name: localizedValue(org.name, locale.value) || '—',
     }))
   } catch (err) {
     console.error('[admin] Load error:', err)

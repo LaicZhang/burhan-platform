@@ -1,3 +1,4 @@
+import { errorMessage } from '../../../app/utils/errors'
 import { getSupabaseAdmin } from '../../utils/supabase'
 
 export default defineEventHandler(async (event) => {
@@ -40,11 +41,11 @@ export default defineEventHandler(async (event) => {
       },
       organizations: orgsWithBranchCount,
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[admin] Stats error:', err)
     throw createError({
       statusCode: 500,
-      statusMessage: err.message || 'Internal server error',
+      statusMessage: errorMessage(err, 'Internal server error'),
     })
   }
 })

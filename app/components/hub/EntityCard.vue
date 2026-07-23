@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database'
+import { localizedValue } from '~/utils/localized'
 
 type Entity = Database['public']['Tables']['entities']['Row'] & {
   organizations?: Pick<Database['public']['Tables']['organizations']['Row'], 'name' | 'org_slug'>
@@ -15,19 +16,18 @@ const { locale } = useI18n()
 const currentLocale = computed(() => locale.value as 'zh' | 'en')
 
 const localizedTitle = computed(() => {
-  return extractLocalized<string>(props.entity.title as any, '') ?? ''
+  return extractLocalized<string>(props.entity.title, '') ?? ''
 })
 
 const localizedContent = computed(() => {
-  const text = extractLocalized<string>(props.entity.content as any, '') ?? ''
+  const text = extractLocalized<string>(props.entity.content, '') ?? ''
   return text.length > 120 ? text.slice(0, 120) + '...' : text
 })
 
 const orgName = computed(() => {
   const name = props.entity.organizations?.name
   if (!name) return ''
-  const obj = typeof name === 'string' ? JSON.parse(name as string) : name
-  return obj[currentLocale.value] || obj.en || obj.zh || ''
+  return localizedValue(name, currentLocale.value)
 })
 
 const orgSlug = computed(() => props.entity.organizations?.org_slug ?? '')

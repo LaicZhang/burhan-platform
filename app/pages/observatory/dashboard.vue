@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database } from '~/types/database'
+import type { Database, ObservatoryAnalyst, ObservatoryThreat, TablesUpdate } from '~/types/database'
 
 definePageMeta({
   layout: 'dashboard',
@@ -8,17 +8,19 @@ definePageMeta({
 })
 
 const { t, locale } = useI18n()
-const supabase = useSupabaseClient<any>()
+const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 
-const threats = ref<any[]>([])
-const analysts = ref<any[]>([])
+const threats = ref<ObservatoryThreat[]>([])
+const analysts = ref<ObservatoryAnalyst[]>([])
 const loading = ref(true)
 const updating = ref<string | null>(null)
 const addAnalystEmail = ref('')
 const addAnalystRole = ref<'observatory_manager' | 'observatory_analyst'>('observatory_analyst')
 const addingAnalyst = ref(false)
-const threatFilter = ref<'all' | 'pending' | 'under_review'>('all')
+const threatFilterOptions = ['all', 'pending', 'under_review'] as const
+type ThreatFilter = typeof threatFilterOptions[number]
+const threatFilter = ref<ThreatFilter>('all')
 
 const counters = computed(() => ({
   total: threats.value.length,
@@ -59,8 +61,8 @@ async function loadData() {
 
     userRole.value = analystRes.data?.role_type || null
     isSuperAdmin.value = profileRes.data?.role === 'super_admin'
-    threats.value = threatsRes.data || []
-    analysts.value = analystsRes.data || []
+    threats.value = (threatsRes.data ?? []) as ObservatoryThreat[]
+    analysts.value = (analystsRes.data ?? []) as ObservatoryAnalyst[]
   } catch (err) {
     console.error('[observatory] Load error:', err)
   } finally {
@@ -71,7 +73,7 @@ async function loadData() {
 const canManage = computed(() => userRole.value === 'observatory_manager' || isSuperAdmin.value)
 const canDelete = computed(() => userRole.value === 'observatory_manager' || isSuperAdmin.value)
 
-async function updateThreat(id: string, updates: Record<string, any>) {
+async function updateThreat(id: string, updates: TablesUpdate<'observatory_threats'>) {
   updating.value = id
   try {
     const { error } = await supabase
@@ -122,7 +124,7 @@ async function addAnalyst() {
 
     addAnalystEmail.value = ''
     await loadData()
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[observatory] Add analyst error:', err)
   } finally {
     addingAnalyst.value = false
@@ -296,13 +298,13 @@ onMounted(loadData)
           <div class="flex items-center gap-2 mb-6">
             <span class="text-[10px] font-mono text-gray-600 uppercase tracking-wider">{{ $t('observatory.filter_label') }}</span>
             <button
-              v-for="f in ['all', 'pending', 'under_review']"
+              v-for="f in threatFilterOptions"
               :key="f"
               class="px-3 py-1.5 text-[11px] font-mono font-medium rounded-lg border transition-all duration-200"
               :class="threatFilter === f
                 ? 'bg-gold/10 text-gold border-gold/30'
                 : 'bg-black/40 text-gray-500 border-slate-800 hover:border-slate-600 hover:text-gray-300'"
-              @click="threatFilter = f as any"
+              @click="threatFilter = f"
             >
               {{ $t(`observatory.status_${f}`) }}
             </button>

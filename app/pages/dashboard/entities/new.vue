@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database, Json } from '~/types/database'
+import type { ContentType, Database, EntityContent, LocalizedString } from '~/types/database'
 import { compressImage } from '~/utils/compressImage'
 
 definePageMeta({
@@ -30,7 +30,7 @@ const form = reactive({
   slug: '',
   content_zh: '',
   content_en: '',
-  content_type: 'article',
+  content_type: 'article' as ContentType,
   branch_id: '',
   video_id: '',
   audio_url: '',
@@ -109,8 +109,8 @@ async function save() {
     .insert({
       organization_id: id,
       branch_id: form.branch_id,
-      title: { zh: form.title_zh, en: form.title_en } as Json,
-      content: { zh: form.content_zh, en: form.content_en, image_url: coverUrl.value } as Json,
+      title: { zh: form.title_zh, en: form.title_en },
+      content: { zh: form.content_zh, en: form.content_en, image_url: coverUrl.value },
       content_type: form.content_type,
       is_public_to_hub: form.is_public_to_hub,
       is_premium: form.is_premium,
@@ -295,7 +295,7 @@ async function onFileSelected(event: Event) {
               { value: 'audio', label: $t('dashboard.type_audio') },
             ]"
             placeholder=" "
-            @update:model-value="form.content_type = $event"
+            @update:model-value="form.content_type = $event as ContentType"
           />
           <div v-if="form.content_type === 'video'">
             <label class="block text-xs text-gray-500 mb-1">{{ $t('dashboard.video_id') }}</label>

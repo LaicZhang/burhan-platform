@@ -1,3 +1,5 @@
+import { asRecord, localizedValue } from '~/utils/localized'
+
 export type LocaleCode = 'zh' | 'en'
 export type LocalizedJson<T = string> = Partial<Record<LocaleCode, T>>
 
@@ -7,9 +9,31 @@ export const useLocale = () => {
   const isRtl = computed<boolean>(() => false)
   const currentLocale = computed<LocaleCode>(() => (locale.value === 'en' ? 'en' : 'zh'))
 
-  function extractLocalized<T = string>(jsonb: LocalizedJson<T> | null | undefined, fallback: T | null = null): T | null {
-    if (!jsonb) return fallback
-    return jsonb[currentLocale.value] ?? jsonb.zh ?? jsonb.en ?? fallback ?? null
+  function extractLocalized<T = string>(
+    jsonb: LocalizedJson<T> | string | null | undefined | unknown,
+    fallback: T | null = null,
+  ): T | null {
+    if (jsonb == null || jsonb === '') return fallback
+
+    if (typeof jsonb === 'string') {
+      const obj = asRecord(jsonb)
+      if (obj) {
+        const loc = obj[currentLocale.value]
+        if (loc != null && loc !== '') return loc as T
+        if (obj.zh != null && obj.zh !== '') return obj.zh as T
+        if (obj.en != null && obj.en !== '') return obj.en as T
+      }
+      // Plain string bilingual fallback path
+      const plain = localizedValue(jsonb, currentLocale.value)
+      return (plain || fallback) as T | null
+    }
+
+    if (typeof jsonb === 'object' && !Array.isArray(jsonb)) {
+      const rec = jsonb as LocalizedJson<T>
+      return rec[currentLocale.value] ?? rec.zh ?? rec.en ?? fallback ?? null
+    }
+
+    return fallback
   }
 
   async function switchLocale(newLocale: string) {

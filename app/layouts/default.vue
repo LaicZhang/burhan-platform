@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { parseOrgSettings } from '~/utils/localized'
 const { org, orgName, orgSlug } = useOrg()
 const { user, signOut, isSuperAdmin } = useUser()
 const { currentLocale, toggleLocale } = useLocale()
@@ -9,8 +10,8 @@ const isTenant = computed(() => !!route.params.org_slug)
 
 const orgLogoSrc = computed(() => {
   if (!org.value) return null
-  const s = org.value.settings as Record<string, any> | null
-  return s?.logos?.dark ?? s?.logos?.light ?? null
+  const s = parseOrgSettings(org.value.settings)
+  return s.logos?.dark ?? s.logos?.light ?? null
 })
 
 const displayOrgName = computed(() => localizedValue(orgName.value, currentLocale.value))

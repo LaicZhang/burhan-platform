@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import type { Json } from '~/types/database'
+import { parseOrgSettings } from '~/utils/localized'
+
 type OrgWithCount = {
   id: string
-  name: any
+  name: string
   org_slug: string
-  settings: any
+  settings: Json
   created_at: string
   content_count: number
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database'
+import { localizedValue, parseOrgSettings } from '~/utils/localized'
 
 type Organization = Database['public']['Tables']['organizations']['Row'] & {
   branches: Database['public']['Tables']['branches']['Row'][]
@@ -11,17 +12,11 @@ const props = defineProps<{
 
 const { locale } = useI18n()
 
-function localize(value: unknown): string {
-  if (!value) return ''
-  const obj = typeof value === 'string' ? JSON.parse(value as string) : value
-  return obj?.[locale.value as 'zh' | 'en'] || obj?.zh || ''
-}
-
-const displayName = computed(() => localize(props.org.name))
+const displayName = computed(() => localizedValue(props.org.name, locale.value))
 
 const logoUrl = computed(() => {
-  const settings = props.org.settings as Record<string, any> | null
-  return settings?.logos?.dark || settings?.logos?.light || null
+  const settings = parseOrgSettings(props.org.settings)
+  return settings.logos?.dark || settings.logos?.light || null
 })
 </script>
 
@@ -60,7 +55,7 @@ const logoUrl = computed(() => {
             size="md"
           >
             <template v-if="branch.name">
-              {{ localize(branch.name) }}
+              {{ localizedValue(branch.name, locale) }}
             </template>
           </Badge>
         </div>

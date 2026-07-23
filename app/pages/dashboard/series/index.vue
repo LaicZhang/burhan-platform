@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database, Json } from '~/types/database'
+import type { Database, LocalizedString } from '~/types/database'
 
 definePageMeta({
   layout: 'dashboard',
@@ -16,8 +16,8 @@ interface Series {
   id: string
   organization_id: string
   branch_id: string
-  title: Json
-  description?: Json
+  title: LocalizedString
+  description?: LocalizedString | null
   cover_url?: string
   is_active: boolean
   created_at: string
@@ -25,7 +25,7 @@ interface Series {
 
 interface Branch {
   id: string
-  name: Json
+  name: LocalizedString
 }
 
 const seriesList = ref<Series[]>([])
@@ -58,13 +58,15 @@ watch(orgId, fetchData, { immediate: true })
 function branchName(branchId: string): string {
   const b = branches.value.find(b => b.id === branchId)
   if (!b) return ''
-  const name = b.name as Record<string, string>
-  return name[locale.value] || name.zh || name.en || ''
+  return localizedValue(b.name, locale.value)
 }
 
 function seriesTitle(s: Series): string {
-  const t = s.title as Record<string, string>
-  return t[locale.value] || t.zh || t.en || ''
+  return localizedValue(s.title, locale.value)
+}
+
+function seriesDescription(s: Series): string {
+  return localizedValue(s.description, locale.value)
 }
 
 async function toggleActive(s: Series) {
@@ -151,7 +153,7 @@ async function toggleActive(s: Series) {
             {{ seriesTitle(s) }}
           </h3>
           <p v-if="s.description" class="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-            {{ (s.description as Record<string, string>)[locale] || (s.description as Record<string, string>).zh || (s.description as Record<string, string>).en }}
+            {{ seriesDescription(s) }}
           </p>
           <div class="flex items-center justify-between pt-1">
             <Button size="sm" variant="outline" @click.stop="navigateTo(localePath(`/dashboard/series/${s.id}`))">

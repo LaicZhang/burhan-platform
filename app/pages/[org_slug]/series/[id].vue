@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database, Json } from '~/types/database'
+import type { Branch, Database, Entity, Json, Series } from '~/types/database'
 
 definePageMeta({
   layout: false,
@@ -16,9 +16,9 @@ const menuOpen = ref(false)
 const seriesId = route.params.id as string
 const orgSlugParam = route.params.org_slug as string
 
-const series = ref<any>(null)
-const lessons = ref<any[]>([])
-const branch = ref<any>(null)
+const series = ref<Series | null>(null)
+const lessons = ref<Entity[]>([])
+const branch = ref<Branch | null>(null)
 const loading = ref(true)
 const notFound = ref(false)
 
@@ -103,7 +103,7 @@ function contentTypeLabel(type: string | null): string {
   return t('entities.article')
 }
 
-function lessonDate(lesson: any): string {
+function lessonDate(lesson: Entity): string {
   return new Date(lesson.created_at).toLocaleDateString(
     currentLocale.value === 'zh' ? 'zh-CN' : 'en-US',
     { year: 'numeric', month: 'short', day: 'numeric' },
@@ -279,7 +279,7 @@ function paddedIndex(i: number): string {
             </div>
 
             <div v-if="lessons.length > 0">
-              <a :href="`#lesson-${lessons[0].id}`">
+              <a :href="lessons[0] ? `#lesson-${lessons[0].id}` : '#'">
                 <button
                   class="w-full inline-flex items-center justify-center font-medium transition-all duration-300 rounded-xl px-6 py-3.5 text-base bg-gold text-onyx hover:bg-gold-500 active:bg-gold-600 shadow-lg shadow-gold/20 gap-2"
                 >

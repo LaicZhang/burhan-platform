@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database, Json } from '~/types/database'
+import type { Database, EntityContent, LocalizedString, TablesInsert } from '~/types/database'
 import { compressImage } from '~/utils/compressImage'
 
 definePageMeta({
@@ -85,16 +85,17 @@ async function save() {
     return
   }
   saving.value = true
-  const { error: insertError } = await supabase
-    .from('series')
-    .insert({
+  const seriesInsert: TablesInsert<'series'> = {
       organization_id: id,
       branch_id: form.branch_id,
-      title: { zh: form.title_zh, en: form.title_en } as Json,
-      description: { zh: form.description_zh, en: form.description_en } as Json,
+      title: { zh: form.title_zh, en: form.title_en },
+      description: { zh: form.description_zh, en: form.description_en },
       cover_url: coverUrl.value || null,
       is_active: true,
-    } as any)
+    }
+  const { error: insertError } = await supabase
+    .from('series')
+    .insert(seriesInsert)
   saving.value = false
   if (insertError) {
     error.value = insertError.message

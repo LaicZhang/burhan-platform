@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { Entity } from '~/types/database'
+
 interface Props {
   title: string
-  entities: any[]
+  entities: Entity[]
   loading?: boolean
 }
 

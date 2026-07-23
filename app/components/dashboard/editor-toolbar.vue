@@ -12,7 +12,7 @@ const editor = computed(() => {
 const linkModalOpen = ref(false)
 const linkUrl = ref('')
 
-function isActive(name: string, attrs?: Record<string, any>): boolean {
+function isActive(name: string, attrs?: Record<string, unknown>): boolean {
   void selectionKey.value
   return editor.value?.isActive(name, attrs) ?? false
 }

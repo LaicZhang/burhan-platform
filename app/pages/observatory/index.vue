@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Database } from '~/types/database'
+import type { Database, ObservatoryThreat } from '~/types/database'
+import { errorMessage } from '~/utils/errors'
 
 definePageMeta({
   title: 'Digital Observatory',
@@ -68,7 +69,8 @@ const platformName = computed(() => {
 
 const isTikTok = computed(() => sourceUrl.value.toLowerCase().includes('tiktok'))
 
-const neutralizedThreats = ref<any[]>([])
+type DefenseFeedItem = Pick<ObservatoryThreat, 'id' | 'title' | 'source_url' | 'platform' | 'danger_level' | 'response_url' | 'created_at'>
+const neutralizedThreats = ref<DefenseFeedItem[]>([])
 const loadingFeed = ref(true)
 
 async function fetchDefenseFeed() {
@@ -81,7 +83,7 @@ async function fetchDefenseFeed() {
       .order('created_at', { ascending: false })
       .limit(20)
 
-    neutralizedThreats.value = data || []
+    neutralizedThreats.value = (data ?? []) as DefenseFeedItem[]
   } finally {
     loadingFeed.value = false
   }
@@ -95,7 +97,7 @@ async function handleSubmit() {
 
   let token = ''
   if (import.meta.client && turnstileSiteKey) {
-    const turnstile = (window as any).turnstile
+    const turnstile = window.turnstile
     if (turnstile) {
       try {
         token = turnstile.getResponse() || ''
@@ -110,7 +112,7 @@ async function handleSubmit() {
   }
 
   try {
-    const result = await $fetch<{ success: boolean; threat: any }>('/api/observatory/report', {
+    const result = await $fetch<{ success: boolean; threat: Pick<ObservatoryThreat, 'id' | 'title' | 'status' | 'platform' | 'created_at'> }>('/api/observatory/report', {
       method: 'POST',
       body: {
         title: title.value,
@@ -130,8 +132,11 @@ async function handleSubmit() {
     dangerLevel.value = 'Medium'
     threatType.value = ''
     spreadLevel.value = 3
-  } catch (err: any) {
-    if (err.statusCode === 429) {
+  } catch (err: unknown) {
+    const statusCode = typeof err === 'object' && err !== null && 'statusCode' in err
+      ? Number((err as { statusCode?: number }).statusCode)
+      : undefined
+    if (statusCode === 429) {
       submitError.value = t('observatory.form_rate_limit')
     } else {
       submitError.value = t('observatory.form_error')

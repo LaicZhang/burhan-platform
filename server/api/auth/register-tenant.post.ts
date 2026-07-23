@@ -1,3 +1,4 @@
+import { errorMessage } from '../../../app/utils/errors'
 import { getSupabaseAdmin } from '../../utils/supabase'
 
 export default defineEventHandler(async (event) => {
@@ -77,11 +78,15 @@ export default defineEventHandler(async (event) => {
     }
 
     return { org, branch }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[register-tenant] Unhandled error:', err)
     throw createError({
-      statusCode: err.statusCode || 500,
-      statusMessage: err.statusMessage || err.message || 'Internal server error',
+      statusCode: (typeof err === 'object' && err !== null && 'statusCode' in err && typeof (err as { statusCode?: number }).statusCode === 'number'
+        ? (err as { statusCode: number }).statusCode
+        : 500),
+      statusMessage: (typeof err === 'object' && err !== null && 'statusMessage' in err && typeof (err as { statusMessage?: string }).statusMessage === 'string'
+        ? (err as { statusMessage: string }).statusMessage
+        : errorMessage(err, 'Internal server error')),
     })
   }
 })

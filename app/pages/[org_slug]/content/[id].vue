@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { Database, Json } from '~/types/database'
+import type { Database, Tables } from '~/types/database'
+import { localizedValue } from '~/utils/localized'
+
+type DbEntity = Tables<'entities'>
+type DbSeries = Tables<'series'>
 
 definePageMeta({
   layout: false,
@@ -9,6 +13,7 @@ const supabase = useSupabaseClient<Database>()
 const route = useRoute()
 const { locale, t } = useI18n()
 const { currentLocale, extractLocalized, toggleLocale } = useLocale()
+const localeCode = computed(() => (currentLocale.value === 'en' ? 'en' : 'zh'))
 const { org, orgName, fetchOrg } = useOrg()
 
 const menuOpen = ref(false)
@@ -16,15 +21,14 @@ const menuOpen = ref(false)
 const entityId = route.params.id as string
 const orgSlugParam = route.params.org_slug as string
 
-const entity = ref<any>(null)
-const series = ref<any>(null)
+const entity = ref<DbEntity | null>(null)
+const entitySeries = ref<DbSeries | null>(null)
 const loading = ref(true)
 const notFound = ref(false)
 
-const pageTitle = computed(() => {
+const pageTitle = computed((): string => {
   if (!entity.value) return ''
-  const title = entity.value.title as Record<string, string>
-  return title[locale.value] || title.zh || title.en || ''
+  return localizedValue(entity.value.title as unknown, localeCode.value)
 })
 
 useHead({
@@ -49,7 +53,7 @@ async function fetchData() {
     return
   }
 
-  entity.value = eData
+  entity.value = eData as DbEntity
 
   if (eData.series_id) {
     const { data: sData } = await supabase
@@ -57,7 +61,7 @@ async function fetchData() {
       .select('*')
       .eq('id', eData.series_id)
       .single()
-    if (sData) series.value = sData
+    if (sData) entitySeries.value = sData as DbSeries
   }
 
   loading.value = false
@@ -65,31 +69,31 @@ async function fetchData() {
 
 watch(() => route.params.id, fetchData, { immediate: true })
 
-function localizedTitle(obj: Json): string {
-  const t = obj as Record<string, string>
-  return t[locale.value] || t.zh || t.en || ''
+function localizedTitle(obj: unknown): string {
+  return localizedValue(obj, localeCode.value)
 }
 
-function localizedContent(obj: Json): string {
-  const c = obj as Record<string, string>
-  return c[locale.value] || c.zh || c.en || ''
+function localizedContent(obj: unknown): string {
+  return localizedValue(obj, localeCode.value)
 }
 
 function seriesTitle(): string {
-  if (!series.value) return ''
-  const t = series.value.title as unknown as Record<string, string>
-  return t[locale.value] || t.zh || t.en || ''
+  if (!entitySeries.value) return ''
+  const rawTitle: unknown = entitySeries.value.title
+  return localizedValue(rawTitle, localeCode.value)
 }
 
 function orgDisplayName(): string {
   if (!org.value?.name) return ''
-  const name = org.value.name as unknown as Record<string, string>
-  return name[locale.value] || name.zh || name.en || ''
+  return localizedValue(org.value.name as unknown, localeCode.value)
 }
 
 function readingTime(): string {
   if (!entity.value) return ''
-  const content = localizedContent(entity.value!.title as Json) + ' ' + localizedContent(entity.value!.content as Json)
+  const content =
+    localizedValue(entity.value.title as unknown, localeCode.value)
+    + ' '
+    + localizedValue(entity.value.content as unknown, localeCode.value)
   const wordCount = content.split(/\s+/).filter(Boolean).length
   const minutes = Math.max(1, Math.ceil(wordCount / 200))
   return t('entities.reading_time', { minutes })
@@ -282,13 +286,13 @@ function contentTypeLabel(): string {
         <!-- Back link -->
         <div class="mb-8">
           <NuxtLink
-            :to="series ? `/${orgSlugParam}/series/${entity.series_id}` : `/${orgSlugParam}`"
+            :to="entitySeries ? `/${orgSlugParam}/series/${entity.series_id}` : `/${orgSlugParam}`"
             class="inline-flex items-center gap-2 px-4 py-2 glass backdrop-blur-xl rounded-xl border border-white/5 text-sm text-gray-400 hover:text-gold hover:border-gold/30 transition-all duration-300"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
-            {{ series ? seriesTitle() : $t('tenant.back_to_org') }}
+            {{ entitySeries ? seriesTitle() : $t('tenant.back_to_org') }}
           </NuxtLink>
         </div>
 
@@ -336,7 +340,7 @@ function contentTypeLabel(): string {
         </div>
 
         <!-- Footer action -->
-        <div v-if="series" class="mt-16 text-center">
+        <div v-if="entitySeries" class="mt-16 text-center">
           <NuxtLink :to="`/${orgSlugParam}/series/${entity.series_id}`">
             <button
               class="inline-flex items-center justify-center font-medium transition-all duration-300 rounded-xl px-8 py-3.5 text-base bg-gold text-onyx hover:bg-gold-500 active:bg-gold-600 shadow-lg shadow-gold/20 gap-2"

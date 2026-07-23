@@ -113,8 +113,11 @@ async function handleSignup() {
     })
 
     await navigateTo(`/${createdOrg.org_slug}`)
-  } catch (err: any) {
-    if (err?.statusCode === 409) {
+  } catch (err: unknown) {
+    const statusCode = typeof err === 'object' && err !== null && 'statusCode' in err
+      ? Number((err as { statusCode?: number }).statusCode)
+      : undefined
+    if (statusCode === 409) {
       error.value = t('auth.org_slug_taken')
     } else {
       error.value = t('auth.org_create_error')

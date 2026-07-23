@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database, Json } from '~/types/database'
+import type { ContentType, Database, EntityContent, LocalizedString, TablesInsert } from '~/types/database'
 import { compressImage } from '~/utils/compressImage'
 
 definePageMeta({
@@ -23,8 +23,8 @@ interface Series {
   id: string
   organization_id: string
   branch_id: string
-  title: Json
-  description?: Json
+  title: LocalizedString
+  description?: LocalizedString | null
   cover_url?: string
   is_active: boolean
   created_at: string
@@ -32,16 +32,17 @@ interface Series {
 
 interface LinkedEntity {
   id: string
-  title: Json
-  content: Json
+  title: LocalizedString
+  content: EntityContent
   branch_id: string
   sort_order: number
   video_id: string | null
   primary_source: string
-  content_type: string | null
+  content_type: ContentType | null
   audio_url: string | null
   audio_file: string | null
   is_premium: boolean
+  is_public_to_hub: boolean
   created_at: string
 }
 
@@ -82,22 +83,18 @@ const episodeForm = reactive({
   audio_file_url: '',
 })
 
-function localizedTitle(obj: Json): string {
-  const t = obj as Record<string, string>
-  return t[locale.value] || t.zh || t.en || ''
+function localizedTitle(obj: LocalizedString | null | undefined): string {
+  return localizedValue(obj, locale.value)
 }
 
-function localizedDescription(obj: Json | undefined): string {
-  if (!obj) return ''
-  const d = obj as Record<string, string>
-  return d[locale.value] || d.zh || d.en || ''
+function localizedDescription(obj: LocalizedString | null | undefined): string {
+  return localizedValue(obj, locale.value)
 }
 
 function branchName(branchId: string): string {
   const b = branches.value.find(b => b.id === branchId)
   if (!b) return ''
-  const name = b.name as Record<string, string>
-  return name[locale.value] || name.zh || name.en || ''
+  return localizedValue(b.name, locale.value)
 }
 
 async function fetchData() {
@@ -126,12 +123,12 @@ async function fetchData() {
   }
   series.value = sData as unknown as Series
 
-  const t = series.value.title as Record<string, string>
-  const d = series.value.description as Record<string, string> | undefined
-  editForm.title_zh = t.zh || ''
-  editForm.title_en = t.en || ''
-  editForm.description_zh = d?.zh || ''
-  editForm.description_en = d?.en || ''
+  const seriesTitle = series.value.title ?? {}
+  const seriesDesc = series.value.description ?? {}
+  editForm.title_zh = seriesTitle.zh || ''
+  editForm.title_en = seriesTitle.en || ''
+  editForm.description_zh = seriesDesc.zh || ''
+  editForm.description_en = seriesDesc.en || ''
   editForm.branch_id = series.value.branch_id
 
   const { data: eData } = await supabase
@@ -156,8 +153,8 @@ async function saveMeta() {
   const { error: uErr } = await supabase
     .from('series')
     .update({
-      title: { zh: editForm.title_zh, en: editForm.title_en } as Json,
-      description: { zh: editForm.description_zh, en: editForm.description_en } as Json,
+      title: { zh: editForm.title_zh, en: editForm.title_en },
+      description: { zh: editForm.description_zh, en: editForm.description_en },
       branch_id: editForm.branch_id,
     })
     .eq('id', seriesId)
@@ -170,20 +167,20 @@ async function saveMeta() {
   editingMeta.value = false
   series.value = {
     ...series.value!,
-    title: { zh: editForm.title_zh, en: editForm.title_en } as Json,
-    description: { zh: editForm.description_zh, en: editForm.description_en } as Json,
+    title: { zh: editForm.title_zh, en: editForm.title_en },
+    description: { zh: editForm.description_zh, en: editForm.description_en },
     branch_id: editForm.branch_id,
   }
 }
 
 function cancelMeta() {
   if (!series.value) return
-  const t = series.value.title as Record<string, string>
-  const d = series.value.description as Record<string, string> | undefined
-  editForm.title_zh = t.zh || ''
-  editForm.title_en = t.en || ''
-  editForm.description_zh = d?.zh || ''
-  editForm.description_en = d?.en || ''
+  const seriesTitle = series.value.title ?? {}
+  const seriesDesc = series.value.description ?? {}
+  editForm.title_zh = seriesTitle.zh || ''
+  editForm.title_en = seriesTitle.en || ''
+  editForm.description_zh = seriesDesc.zh || ''
+  editForm.description_en = seriesDesc.en || ''
   editForm.branch_id = series.value.branch_id
   editingMeta.value = false
 }
@@ -226,12 +223,11 @@ const episodeEditForm = reactive({
 
 function openEditEpisode(ep: LinkedEntity) {
   editingEpisodeId.value = ep.id
-  const t = ep.title as Record<string, string>
-  episodeEditForm.title_zh = t.zh || ''
-  episodeEditForm.title_en = t.en || ''
-  episodeEditForm.content_type = (ep.content_type as any) || 'article'
+  episodeEditForm.title_zh = ep.title.zh || ''
+  episodeEditForm.title_en = ep.title.en || ''
+  episodeEditForm.content_type = (ep.content_type || 'article') as ContentType
   episodeEditForm.is_premium = ep.is_premium
-  episodeEditForm.is_public_to_hub = (ep as any).is_public_to_hub ?? false
+  episodeEditForm.is_public_to_hub = ep.is_public_to_hub ?? false
   episodeEditForm.audio_url = ep.audio_url || ''
   episodeEditForm.video_id = ep.video_id || ''
   error.value = ''
@@ -252,7 +248,7 @@ async function saveEditEpisode() {
   error.value = ''
 
   const payload: EntityUpdate = {
-    title: { zh: episodeEditForm.title_zh, en: episodeEditForm.title_en } as Json,
+    title: { zh: episodeEditForm.title_zh, en: episodeEditForm.title_en },
     content_type: episodeEditForm.content_type,
     is_premium: episodeEditForm.is_premium,
     is_public_to_hub: episodeEditForm.is_public_to_hub,
@@ -302,17 +298,17 @@ async function addEpisode() {
   const newSortOrder = maxOrder + 1
 
   const title = { zh: episodeForm.title_zh, en: episodeForm.title_en }
-  const payload: Record<string, any> = {
+  const payload: TablesInsert<'entities'> = {
     organization_id: id,
     branch_id: series.value.branch_id,
     series_id: seriesId,
     sort_order: newSortOrder,
-    title: title as Json,
-    content: { zh: '', en: '' } as Json,
+    title,
+    content: { zh: '', en: '' },
     primary_source: '',
     is_premium: episodeForm.is_premium,
     is_public_to_hub: episodeForm.is_public_to_hub,
-    content_type: episodeForm.content_type,
+    content_type: episodeForm.content_type as ContentType,
   }
 
   if (episodeForm.content_type === 'audio') {
@@ -322,7 +318,7 @@ async function addEpisode() {
 
   const { error: insErr } = await supabase
     .from('entities')
-    .insert(payload as any)
+    .insert(payload)
 
   episodeSaving.value = false
   if (insErr) {
@@ -391,8 +387,7 @@ function episodeType(entity: LinkedEntity): string {
 }
 
 function episodeContentSummary(entity: LinkedEntity): string {
-  const c = entity.content as Record<string, string>
-  const text = c[locale.value] || c.zh || c.en || ''
+  const text = localizedValue(entity.content, locale.value)
   return text.replace(/<[^>]*>/g, '').substring(0, 100)
 }
 </script>

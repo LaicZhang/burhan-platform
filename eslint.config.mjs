@@ -9,7 +9,7 @@ export default withNuxt({
     'vue/no-v-html': 'off',
     'vue/attributes-order': 'warn',
     'vue/first-attribute-linebreak': 'off',
-    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-unused-vars': ['warn', {
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_',

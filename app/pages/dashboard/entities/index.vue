@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Database, Json } from '~/types/database'
+import type { ContentType, Database, EntityContent, LocalizedString } from '~/types/database'
+import { entityCoverUrl, parseEntityContent } from '~/utils/localized'
 
 definePageMeta({
   layout: 'dashboard',
@@ -60,7 +61,7 @@ const form = reactive({
   title_en: '',
   content_zh: '',
   content_en: '',
-  content_type: 'video',
+  content_type: 'video' as ContentType,
   branch_id: '',
   video_id: '',
   audio_url: '',
@@ -93,7 +94,7 @@ const filteredEntities = computed(() => {
   }
   if (contentTypeFilter.value !== 'all') {
     result = result.filter(e => {
-      const ct = (e as any).content_type
+      const ct = e.content_type
       if (ct) return ct === contentTypeFilter.value
       if (e.video_id && e.video_id !== '') return contentTypeFilter.value === 'video'
       return contentTypeFilter.value === 'article'
@@ -103,11 +104,11 @@ const filteredEntities = computed(() => {
 })
 
 function isVideo(entity: Entity): boolean {
-  return (entity as any).content_type === 'video' || (entity.video_id !== null && entity.video_id !== '')
+  return entity.content_type === 'video' || (entity.video_id !== null && entity.video_id !== '')
 }
 
 function isAudio(entity: Entity): boolean {
-  return (entity as any).content_type === 'audio'
+  return entity.content_type === 'audio'
 }
 
 function thumbnailUrl(entity: Entity): string | null {
@@ -191,7 +192,7 @@ function navigateToNew() {
 }
 
 function openEditModal(entity: Entity) {
-  const ct = (entity as any).content_type
+  const ct = entity.content_type
   if (ct === 'article' || (!ct && !entity.video_id && !isAudio(entity))) {
     navigateTo(localePath(`/dashboard/entities/${entity.id}`))
     return
@@ -204,15 +205,15 @@ function openEditModal(entity: Entity) {
   form.title_en = title?.en || ''
   form.content_zh = content?.zh || ''
   form.content_en = content?.en || ''
-  form.content_type = ct || (isVid ? 'video' : 'article')
+  form.content_type = (ct || (isVid ? 'video' : 'article')) as ContentType
   form.branch_id = entity.branch_id
   form.video_id = entity.video_id || ''
-  form.audio_url = (entity as any).audio_url || ''
+  form.audio_url = entity.audio_url || ''
   form.is_premium = entity.is_premium
   form.is_public_to_hub = entity.is_public_to_hub
   form.price = entity.price ? String(entity.price) : ''
-  form.series_id = (entity as any).series_id || ''
-  form.sort_order = (entity as any).sort_order || 0
+  form.series_id = entity.series_id || ''
+  form.sort_order = entity.sort_order || 0
   error.value = ''
   showModal.value = true
 }
@@ -237,8 +238,8 @@ async function submitEntity() {
   const payload = {
     organization_id: id,
     branch_id: form.branch_id,
-    title: { zh: form.title_zh, en: form.title_en } as Json,
-    content: { zh: form.content_zh, en: form.content_en } as Json,
+    title: { zh: form.title_zh, en: form.title_en },
+    content: { zh: form.content_zh, en: form.content_en },
     is_public_to_hub: form.is_public_to_hub,
     is_premium: form.is_premium,
     content_type: form.content_type,
@@ -439,8 +440,8 @@ async function confirmDelete() {
         <div class="relative aspect-video overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
           <!-- Thumbnail image -->
           <img
-            v-if="(isAudio(entity) && (entity as any).cover_url) || (thumbnailUrl(entity) && !isThumbnailBroken(entity.id) && !isAudio(entity))"
-            :src="isAudio(entity) ? (entity as any).cover_url : thumbnailUrl(entity)"
+            v-if="(isAudio(entity) && entityCoverUrl(entity)) || (thumbnailUrl(entity) && !isThumbnailBroken(entity.id) && !isAudio(entity))"
+            :src="(isAudio(entity) ? entityCoverUrl(entity) : thumbnailUrl(entity)) || undefined"
             :alt="localizedValue(entity.title, locale)"
             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             loading="lazy"
@@ -556,13 +557,13 @@ async function confirmDelete() {
               {{ branchName(entity.branch_id) }}
             </span>
             <span
-              v-if="(entity as any).series_id"
+              v-if="entity.series_id"
               class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"
             >
               <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              {{ seriesName((entity as any).series_id) }}
+              {{ seriesName(entity.series_id) }}
             </span>
             <span
               class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full"
@@ -665,7 +666,7 @@ async function confirmDelete() {
                       { value: 'audio', label: '🎙️ ' + ($t('dashboard.type_audio') || '音频') },
                     ]"
                     placeholder=" "
-                    @update:model-value="form.content_type = $event"
+                    @update:model-value="form.content_type = $event as ContentType"
                   />
                 </div>
                 <div>

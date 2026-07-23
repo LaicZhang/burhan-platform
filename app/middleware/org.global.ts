@@ -1,3 +1,6 @@
+import type { Organization } from '~/types/database'
+import { localizedValue } from '~/utils/localized'
+
 const PUBLIC_ROUTES = ['/login', '/signup', '/dashboard']
 
 function isPublicRoute(path: string) {
@@ -41,9 +44,8 @@ export default defineNuxtRouteMiddleware(async (to, _from) => {
 
         if (fallbackOrg) {
           useState('org').value = fallbackOrg
-          const fallbackName = fallbackOrg.name as unknown as Record<string, string>
           useHead({
-            title: fallbackName[currentLocale] || fallbackName.zh || fallbackName.en || '',
+            title: localizedValue(fallbackOrg.name, currentLocale),
           })
           return
         }
@@ -57,7 +59,7 @@ export default defineNuxtRouteMiddleware(async (to, _from) => {
     })
   }
 
-  const org = useState<any>('org').value
+  const org = useState<Organization | null>('org').value
   if (org?.name) {
     useHead({
       link: [

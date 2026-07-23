@@ -5,6 +5,28 @@ export type UserRole = 'super_admin' | 'owner' | 'manager' | 'member'
 export type DangerLevel = 'Low' | 'Medium' | 'High'
 export type ThreatStatus = 'pending' | 'under_review' | 'neutralized'
 export type AnalystRole = 'observatory_manager' | 'observatory_analyst'
+export type ContentType = 'video' | 'article' | 'audio'
+
+/** Bilingual JSONB shape used across title/name/content fields */
+export type LocalizedString = Partial<Record<'zh' | 'en', string>>
+
+/** App-level org name: SQL stores TEXT (plain string or JSON text) */
+export type OrgName = string | LocalizedString
+
+/** Entity content JSON: bilingual body + optional cover image */
+export type EntityContent = LocalizedString & {
+  image_url?: string | null
+}
+
+/** Organization settings JSONB */
+export type OrgSettings = {
+  logos?: {
+    dark?: string | null
+    light?: string | null
+  }
+  description?: LocalizedString
+  [key: string]: Json | undefined
+}
 
 export interface Database {
   public: {
@@ -37,7 +59,7 @@ export interface Database {
         Row: {
           id: string
           organization_id: string
-          name: Json
+          name: LocalizedString
           module_type: ModuleType
           slug: string
           is_active: boolean
@@ -46,7 +68,7 @@ export interface Database {
         Insert: {
           id?: string
           organization_id: string
-          name: Json
+          name: LocalizedString
           module_type: ModuleType
           slug: string
           is_active?: boolean
@@ -55,7 +77,7 @@ export interface Database {
         Update: {
           id?: string
           organization_id?: string
-          name?: Json
+          name?: LocalizedString
           module_type?: ModuleType
           slug?: string
           is_active?: boolean
@@ -67,21 +89,21 @@ export interface Database {
         Row: {
           id: string
           organization_id: string | null
-          full_name: Json
+          full_name: LocalizedString
           role: UserRole
           created_at: string
         }
         Insert: {
           id: string
           organization_id?: string | null
-          full_name?: Json
+          full_name?: LocalizedString
           role?: UserRole
           created_at?: string
         }
         Update: {
           id?: string
           organization_id?: string | null
-          full_name?: Json
+          full_name?: LocalizedString
           role?: UserRole
           created_at?: string
         }
@@ -92,10 +114,10 @@ export interface Database {
           id: string
           branch_id: string
           organization_id: string
-          title: Json
-          content: Json
+          title: LocalizedString
+          content: EntityContent
           is_public_to_hub: boolean
-          content_type: string
+          content_type: ContentType
           video_id: string | null
           primary_source: string
           fallback_source: string | null
@@ -112,10 +134,10 @@ export interface Database {
           id?: string
           branch_id: string
           organization_id: string
-          title: Json
-          content?: Json
+          title: LocalizedString
+          content?: EntityContent
           is_public_to_hub?: boolean
-          content_type?: string
+          content_type?: ContentType
           video_id?: string | null
           primary_source?: string
           fallback_source?: string | null
@@ -132,10 +154,10 @@ export interface Database {
           id?: string
           branch_id?: string
           organization_id?: string
-          title?: Json
-          content?: Json
+          title?: LocalizedString
+          content?: EntityContent
           is_public_to_hub?: boolean
-          content_type?: string
+          content_type?: ContentType
           video_id?: string | null
           primary_source?: string
           fallback_source?: string | null
@@ -189,14 +211,13 @@ export interface Database {
         }
         Relationships: []
       }
-
       series: {
         Row: {
           id: string
           organization_id: string
           branch_id: string
-          title: Json
-          description: Json | null
+          title: LocalizedString
+          description: LocalizedString | null
           cover_url: string | null
           is_active: boolean
           created_at: string
@@ -205,8 +226,8 @@ export interface Database {
           id?: string
           organization_id: string
           branch_id: string
-          title?: Json
-          description?: Json | null
+          title?: LocalizedString
+          description?: LocalizedString | null
           cover_url?: string | null
           is_active?: boolean
           created_at?: string
@@ -215,8 +236,8 @@ export interface Database {
           id?: string
           organization_id?: string
           branch_id?: string
-          title?: Json
-          description?: Json | null
+          title?: LocalizedString
+          description?: LocalizedString | null
           cover_url?: string | null
           is_active?: boolean
           created_at?: string
@@ -257,3 +278,20 @@ export interface Database {
     }
   }
 }
+
+export type Tables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Row']
+
+export type TablesInsert<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Insert']
+
+export type TablesUpdate<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Update']
+
+export type Entity = Tables<'entities'>
+export type Series = Tables<'series'>
+export type Organization = Tables<'organizations'>
+export type Branch = Tables<'branches'>
+export type Profile = Tables<'profiles'>
+export type ObservatoryThreat = Tables<'observatory_threats'>
+export type ObservatoryAnalyst = Tables<'observatory_analysts'>
